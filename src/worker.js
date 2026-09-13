@@ -15,21 +15,54 @@ function getBearerToken(request) {
 
 async function verifyFirebaseToken(token) {
   if (!token) {
+    console.error('Firebase token verification failed: token missing')
     return null
   }
 
   try {
-    const { payload } = await jwtVerify(token, jwks, {
+    console.error('Firebase token verification: starting JWKS fetch')
+    const { payload, protectedHeader } = await jwtVerify(token, jwks, {
       issuer: FIREBASE_ISSUER,
       audience: FIREBASE_AUDIENCE,
     })
 
+    console.error('Firebase token verification: JWKS fetch and verification completed', {
+      issuer: payload?.iss,
+      audience: payload?.aud,
+      kid: protectedHeader?.kid,
+      uid: payload?.uid,
+    })
+
     if (!payload || !payload.uid) {
+      console.error('Firebase token verification failed: missing payload or uid', payload)
+      return null
+    }
+
+    if (payload.iss !== FIREBASE_ISSUER) {
+      console.error('Firebase token verification failed: mismatched iss', {
+        expected: FIREBASE_ISSUER,
+        actual: payload.iss,
+      })
+      return null
+    }
+
+    if (payload.aud !== FIREBASE_AUDIENCE) {
+      console.error('Firebase token verification failed: mismatched aud', {
+        expected: FIREBASE_AUDIENCE,
+        actual: payload.aud,
+      })
       return null
     }
 
     return payload
   } catch (error) {
+    console.error('Firebase token verification failed at runtime', {
+      message: error?.message,
+      name: error?.name,
+      code: error?.code,
+      cause: error?.cause,
+      stack: error?.stack,
+    })
     return null
   }
 }
