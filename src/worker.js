@@ -26,14 +26,17 @@ async function verifyFirebaseToken(token) {
       audience: FIREBASE_AUDIENCE,
     })
 
+    const firebaseUid = payload?.sub
+
     console.error('Firebase token verification: JWKS fetch and verification completed', {
       issuer: payload?.iss,
       audience: payload?.aud,
       kid: protectedHeader?.kid,
-      uid: payload?.uid,
+      uid: firebaseUid,
+      payload,
     })
 
-    if (!payload || !payload.uid) {
+    if (!payload || !firebaseUid) {
       console.error('Firebase token verification failed: missing payload or uid', payload)
       return null
     }
