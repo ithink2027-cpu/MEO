@@ -1,7 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { auth } from '../firebase'
 
 export const SUPABASE_URL = 'https://icqkolpqyexqfmsdonqb.supabase.co'
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljcWtvbHBxeWV4cWZtc2RvbnFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMjE3ODksImV4cCI6MjEwNDc5Nzc4OX0.QQPUcCPYe4snPaof1pPjnqqiTbJLssD4N7LpazaA4HY'
 export const SUPABASE_BUCKET = 'image-storage'
 
 export function normalizeSupabaseUrl(rawUrl = '') {
@@ -18,32 +17,33 @@ export function getSupabaseBucketUrl(bucketName = SUPABASE_BUCKET) {
   return `${normalizeSupabaseUrl(SUPABASE_URL)}/storage/v1/object/public/${bucketName}`
 }
 
-export const supabase = createClient(normalizeSupabaseUrl(SUPABASE_URL), SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-  },
-})
-
 export async function uploadProjectImage(file) {
   if (!file) {
     return ''
   }
 
-  const extension = file.name.includes('.') ? file.name.split('.').pop() : 'png'
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`
-
-  const { error } = await supabase.storage.from(SUPABASE_BUCKET).upload(fileName, file, {
-    cacheControl: '3600',
-    upsert: false,
-    contentType: file.type || 'application/octet-stream',
-  })
-
-  if (error) {
-    throw error
+  const currentUser = auth.currentUser
+  if (!currentUser) {
+    throw new Error('User is not authenticated')
   }
 
-  const { data } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(fileName)
+  const idToken = await currentUser.getIdToken()
+  const formData = new FormData()
+  formData.append('file', file)
 
-  return data?.publicUrl || ''
+  const response = await fetch('/api/upload-image', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+    throw new Error(errorData.error || 'Upload failed')
+  }
+
+  const data = await response.json()
+  return data.url || ''
 }
