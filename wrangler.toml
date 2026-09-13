@@ -1,5 +1,8 @@
 name = "emo"
 compatibility_date = "2026-09-13"
 
+[assets]
+directory = "./dist"
+
 [vars]
 SUPABASE_URL = "https://icqkolpqyexqfmsdonqb.supabase.co"
