@@ -34,9 +34,9 @@ async function verifyFirebaseToken(token) {
   }
 }
 
-export async function onRequestPost(context) {
+async function handleUploadImage(request, env) {
   try {
-    const token = getBearerToken(context.request)
+    const token = getBearerToken(request)
     const verifiedPayload = await verifyFirebaseToken(token)
 
     if (!verifiedPayload) {
@@ -46,7 +46,7 @@ export async function onRequestPost(context) {
       })
     }
 
-    const formData = await context.request.formData()
+    const formData = await request.formData()
     const file = formData.get('file')
 
     if (!(file instanceof File) || !file.name) {
@@ -56,7 +56,7 @@ export async function onRequestPost(context) {
       })
     }
 
-    const serviceKey = context.env?.SUPABASE_SERVICE_ROLE_KEY
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY
     if (!serviceKey) {
       return new Response(JSON.stringify({ error: 'Supabase service key is not configured' }), {
         status: 500,
@@ -97,4 +97,16 @@ export async function onRequestPost(context) {
       headers: { 'Content-Type': 'application/json' },
     })
   }
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url)
+
+    if (url.pathname.startsWith('/api/upload-image')) {
+      return handleUploadImage(request, env)
+    }
+
+    return env.ASSETS.fetch(request)
+  },
 }
