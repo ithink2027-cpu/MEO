@@ -516,6 +516,7 @@ function ProjectListPage({
 
 function ProjectDetailPage({ project, admin, language, onNavigateHome, onNavigateProjects, onOpenLogin, onLogout, onOpenWhatsApp, onToggleLanguage }) {
   const text = copy[language]
+  const [lightboxIndex, setLightboxIndex] = useState(null)
 
   if (!project) {
     return null
@@ -523,6 +524,29 @@ function ProjectDetailPage({ project, admin, language, onNavigateHome, onNavigat
 
   const galleryImages = Array.isArray(project.subImages) ? project.subImages.filter(Boolean) : []
   const coverImage = project.coverImage || project.image || project.imageUrl || galleryImages[0] || ''
+
+  useEffect(() => {
+    if (lightboxIndex === null || !galleryImages.length) {
+      return undefined
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setLightboxIndex(null)
+      }
+
+      if (event.key === 'ArrowRight') {
+        setLightboxIndex((current) => (current + 1) % galleryImages.length)
+      }
+
+      if (event.key === 'ArrowLeft') {
+        setLightboxIndex((current) => (current - 1 + galleryImages.length) % galleryImages.length)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [galleryImages, lightboxIndex])
 
   return (
     <div className={`page-shell detail-page ${language === 'ar' ? 'lang-ar' : ''}`}>
@@ -545,7 +569,15 @@ function ProjectDetailPage({ project, admin, language, onNavigateHome, onNavigat
             {galleryImages.length > 1 ? (
               <div className="detail-gallery">
                 {galleryImages.slice(0, 4).map((image, index) => (
-                  <img key={`${project.id}-detail-${index}`} src={image} alt={`${project.title} detail ${index + 1}`} />
+                  <button
+                    key={`${project.id}-detail-${index}`}
+                    type="button"
+                    className="detail-gallery-item"
+                    onClick={() => setLightboxIndex(index)}
+                    aria-label={`Open ${project.title} gallery ${index + 1}`}
+                  >
+                    <img src={image} alt={`${project.title} detail ${index + 1}`} />
+                  </button>
                 ))}
               </div>
             ) : null}
@@ -558,6 +590,31 @@ function ProjectDetailPage({ project, admin, language, onNavigateHome, onNavigat
           </div>
         </div>
       </main>
+
+      {lightboxIndex !== null && galleryImages.length ? (
+        <div className="modal-overlay lightbox-overlay" role="dialog" aria-modal="true" onClick={() => setLightboxIndex(null)}>
+          <div className="lightbox-modal" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="lightbox-close" aria-label="Close lightbox" onClick={() => setLightboxIndex(null)}>×</button>
+            <button
+              type="button"
+              className="lightbox-nav lightbox-prev"
+              aria-label="Previous image"
+              onClick={() => setLightboxIndex((current) => (current - 1 + galleryImages.length) % galleryImages.length)}
+            >
+              ‹
+            </button>
+            <img className="lightbox-image" src={galleryImages[lightboxIndex]} alt={`${project.title} view ${lightboxIndex + 1}`} />
+            <button
+              type="button"
+              className="lightbox-nav lightbox-next"
+              aria-label="Next image"
+              onClick={() => setLightboxIndex((current) => (current + 1) % galleryImages.length)}
+            >
+              ›
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <Footer language={language} />
     </div>
