@@ -1,4 +1,4 @@
-import { auth } from '../firebase'
+import { auth } from '../firebase.js'
 
 export const SUPABASE_URL = 'https://icqkolpqyexqfmsdonqb.supabase.co'
 export const SUPABASE_BUCKET = 'image-storage'

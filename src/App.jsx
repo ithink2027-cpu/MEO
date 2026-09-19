@@ -9,7 +9,6 @@ import {
   doc,
   logActivity,
   onSnapshot,
-  serverTimestamp,
   signInWithEmailAndPassword,
   signOut,
   updateDoc,
@@ -31,7 +30,6 @@ const projectSeed = [
   {
     id: 1,
     title: 'Al Noor Business Center',
-    category: 'Commercial',
     description: 'A landmark mixed-use development planned for modern business operations.',
     image:
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80',
@@ -39,7 +37,6 @@ const projectSeed = [
   {
     id: 2,
     title: 'Green Valley Residences',
-    category: 'Residential',
     description: 'Boutique residential housing designed for comfort, sustainability, and utility.',
     image:
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80',
@@ -47,7 +44,6 @@ const projectSeed = [
   {
     id: 3,
     title: 'Harbor Logistics Hub',
-    category: 'Industrial',
     description: 'A large-scale logistics and freight facility focused on efficiency and flow.',
     image:
       'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80',
@@ -55,7 +51,6 @@ const projectSeed = [
   {
     id: 4,
     title: 'Civic Plaza',
-    category: 'Public Works',
     description: 'A central civic space with pedestrian circulation, shade, and public access.',
     image:
       'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=900&q=80',
@@ -63,7 +58,6 @@ const projectSeed = [
   {
     id: 5,
     title: 'Metro Transit Terminal',
-    category: 'Infrastructure',
     description: 'Transit infrastructure designed to manage heavy public movement and flow.',
     image:
       'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=900&q=80',
@@ -71,7 +65,6 @@ const projectSeed = [
   {
     id: 6,
     title: 'Riverside Offices',
-    category: 'Corporate',
     description: 'A contemporary office campus blending flexible workspaces and outdoor views.',
     image:
       'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80',
@@ -81,9 +74,30 @@ const projectSeed = [
 const defaultProjectForm = {
   title: '',
   description: '',
-  category: '',
-  image: '',
-  imageUrl: '',
+  coverImage: '',
+  subImages: [],
+}
+
+const sanitizeProjectData = (data = {}) => {
+  const title = typeof data.title === 'string' ? data.title.trim() : ''
+  const description = typeof data.description === 'string' ? data.description.trim() : ''
+  const coverImage = typeof data.coverImage === 'string' && data.coverImage.trim()
+    ? data.coverImage.trim()
+    : typeof data.imageUrl === 'string' && data.imageUrl.trim()
+      ? data.imageUrl.trim()
+      : typeof data.image === 'string' && data.image.trim()
+        ? data.image.trim()
+        : ''
+  const subImages = Array.isArray(data.subImages)
+    ? data.subImages.filter((url) => typeof url === 'string' && url.trim())
+    : []
+
+  return {
+    title,
+    description,
+    coverImage,
+    subImages,
+  }
 }
 
 const localizedProjects = {
@@ -91,7 +105,6 @@ const localizedProjects = {
     {
       id: 1,
       title: 'Al Noor Business Center',
-      category: 'Commercial',
       description: 'A landmark mixed-use development planned for modern business operations.',
       image:
         'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80',
@@ -99,7 +112,6 @@ const localizedProjects = {
     {
       id: 2,
       title: 'Green Valley Residences',
-      category: 'Residential',
       description: 'Boutique residential housing designed for comfort, sustainability, and utility.',
       image:
         'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80',
@@ -107,7 +119,6 @@ const localizedProjects = {
     {
       id: 3,
       title: 'Harbor Logistics Hub',
-      category: 'Industrial',
       description: 'A large-scale logistics and freight facility focused on efficiency and flow.',
       image:
         'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80',
@@ -115,7 +126,6 @@ const localizedProjects = {
     {
       id: 4,
       title: 'Civic Plaza',
-      category: 'Public Works',
       description: 'A central civic space with pedestrian circulation, shade, and public access.',
       image:
         'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=900&q=80',
@@ -123,7 +133,6 @@ const localizedProjects = {
     {
       id: 5,
       title: 'Metro Transit Terminal',
-      category: 'Infrastructure',
       description: 'Transit infrastructure designed to manage heavy public movement and flow.',
       image:
         'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80',
@@ -131,7 +140,6 @@ const localizedProjects = {
     {
       id: 6,
       title: 'Riverside Offices',
-      category: 'Corporate',
       description: 'A contemporary office campus blending flexible workspaces and outdoor views.',
       image:
         'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80',
@@ -141,7 +149,6 @@ const localizedProjects = {
     {
       id: 1,
       title: 'مركز النور للأعمال',
-      category: 'تجاري',
       description: 'مشروع متعدد الاستخدامات يمثل علامة بارزة للتشغيل التجاري الحديث.',
       image:
         'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80',
@@ -149,7 +156,6 @@ const localizedProjects = {
     {
       id: 2,
       title: 'إسكان وادي الخضراء',
-      category: 'سكني',
       description: 'مساكن صغيرة مصممة للراحة والاستدامة والفعالية.',
       image:
         'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80',
@@ -157,7 +163,6 @@ const localizedProjects = {
     {
       id: 3,
       title: 'مركز الميناء اللوجستي',
-      category: 'صناعي',
       description: 'مرفق لوجستي واسع يركز على الكفاءة وسير العمليات.',
       image:
         'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=900&q=80',
@@ -165,7 +170,6 @@ const localizedProjects = {
     {
       id: 4,
       title: 'ساحة المدينة',
-      category: 'أعمال عامة',
       description: 'مساحة حضرية مركزية مع مسارات للمشاة والظل وإمكانية الوصول العام.',
       image:
         'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=900&q=80',
@@ -173,7 +177,6 @@ const localizedProjects = {
     {
       id: 5,
       title: 'محطة المترو',
-      category: 'بنية تحتية',
       description: 'بنية تحتية للنقل مصممة لاستيعاب الحركة العامة الثقيلة.',
       image:
         'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=1200&q=80',
@@ -181,7 +184,6 @@ const localizedProjects = {
     {
       id: 6,
       title: 'مكاتب النهر',
-      category: 'شركة',
       description: 'مركز أعمال حديث يجمع بين المساحات المرنة وإطلالات الخارج.',
       image:
         'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=80',
@@ -214,9 +216,6 @@ const copy = {
     addProject: 'Add Project',
     viewProject: 'View project →',
     detailPrefix: 'project',
-    detailLocation: 'Location',
-    detailType: 'Type',
-    detailStatus: 'Status',
     detailButton: 'WhatsApp Inquiry',
     loginTitle: 'Admin Login',
     loginIntro: 'Sign in to manage projects and site content.',
@@ -229,10 +228,10 @@ const copy = {
     deleteMessage: 'Are you sure you want to delete',
     deleteFootnote: 'This action cannot be undone.',
     deleteButton: 'Delete',
-    uploadLabel: 'Upload project image',
+    uploadLabel: 'Upload project cover image',
+    uploadGalleryLabel: 'Upload gallery images',
     projectTitle: 'Project title',
     projectDescription: 'Description',
-    projectCategory: 'Category',
     saveProject: 'Save Project',
     saveChanges: 'Save Changes',
     editProject: 'Edit Project',
@@ -264,9 +263,6 @@ const copy = {
     addProject: 'إضافة مشروع',
     viewProject: 'عرض المشروع ←',
     detailPrefix: 'مشروع',
-    detailLocation: 'الموقع',
-    detailType: 'النوع',
-    detailStatus: 'الحالة',
     detailButton: 'استفسار واتساب',
     loginTitle: 'تسجيل الدخول',
     loginIntro: 'سجل الدخول لإدارة المشاريع ومحتوى الموقع.',
@@ -279,10 +275,10 @@ const copy = {
     deleteMessage: 'هل أنت متأكد أنك تريد حذف',
     deleteFootnote: 'لا يمكن التراجع عن هذا الإجراء.',
     deleteButton: 'حذف',
-    uploadLabel: 'تحميل صورة المشروع',
+    uploadLabel: 'تحميل صورة الغلاف',
+    uploadGalleryLabel: 'تحميل صور المعرض',
     projectTitle: 'عنوان المشروع',
     projectDescription: 'الوصف',
-    projectCategory: 'الفئة',
     saveProject: 'حفظ المشروع',
     saveChanges: 'حفظ التغييرات',
     editProject: 'تعديل المشروع',
@@ -360,7 +356,7 @@ function Footer({ language }) {
       <div className="container footer-row">
         <div>© 2026 {text.footerLabel}</div>
         <a
-          href="https://wa.me/966500000000?text=Hello%20Marwan%20Engineering%20Office"
+          href="https://wa.me/963938990054"
           target="_blank"
           rel="noreferrer"
           className="whatsapp-link"
@@ -479,25 +475,36 @@ function ProjectListPage({
         </div>
 
         <div className="projects-grid container">
-          {projects.map((project) => (
-            <article className="project-card" key={project.id}>
-              <img src={project.image || project.imageUrl} alt={project.title} />
-              {admin ? (
-                <div className="admin-actions">
-                  <button type="button" aria-label={`Edit ${project.title}`} onClick={() => onOpenEditProject(project)}>✎</button>
-                  <button type="button" aria-label={`Delete ${project.title}`} onClick={() => onOpenDeleteProject(project)}>🗑</button>
+          {projects.map((project) => {
+            const galleryImages = Array.isArray(project.subImages) ? project.subImages.filter(Boolean) : []
+            const coverImage = project.coverImage || project.image || project.imageUrl || galleryImages[0] || ''
+
+            return (
+              <article className="project-card" key={project.id}>
+                <img src={coverImage} alt={project.title} />
+                {admin ? (
+                  <div className="admin-actions">
+                    <button type="button" aria-label={`Edit ${project.title}`} onClick={() => onOpenEditProject(project)}>✎</button>
+                    <button type="button" aria-label={`Delete ${project.title}`} onClick={() => onOpenDeleteProject(project)}>🗑</button>
+                  </div>
+                ) : null}
+                {galleryImages.length ? (
+                  <div className="project-gallery">
+                    {galleryImages.slice(0, 3).map((image, index) => (
+                      <img key={`${project.id}-sub-${index}`} src={image} alt={`${project.title} gallery ${index + 1}`} />
+                    ))}
+                  </div>
+                ) : null}
+                <div className="project-body">
+                  <h3>{project.title}</h3>
+                  <p>{project.description}</p>
+                  <button type="button" className="text-link" onClick={() => onOpenProject(project)}>
+                    {text.viewProject}
+                  </button>
                 </div>
-              ) : null}
-              <div className="project-body">
-                <span className="project-tag">{project.category}</span>
-                <h3>{project.title}</h3>
-                <p>{project.description}</p>
-                <button type="button" className="text-link" onClick={() => onOpenProject(project)}>
-                  {text.viewProject}
-                </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            )
+          })}
         </div>
       </main>
 
@@ -513,6 +520,9 @@ function ProjectDetailPage({ project, admin, language, onNavigateHome, onNavigat
   if (!project) {
     return null
   }
+
+  const galleryImages = Array.isArray(project.subImages) ? project.subImages.filter(Boolean) : []
+  const coverImage = project.coverImage || project.image || project.imageUrl || galleryImages[0] || ''
 
   return (
     <div className={`page-shell detail-page ${language === 'ar' ? 'lang-ar' : ''}`}>
@@ -531,17 +541,19 @@ function ProjectDetailPage({ project, admin, language, onNavigateHome, onNavigat
         <div className="breadcrumbs">{text.navHome} / {text.navProjects} / {project.title}</div>
         <div className="detail-layout">
           <div className="detail-image-block">
-            <img src={project.image || project.imageUrl} alt={project.title} />
+            <img src={coverImage} alt={project.title} />
+            {galleryImages.length > 1 ? (
+              <div className="detail-gallery">
+                {galleryImages.slice(0, 4).map((image, index) => (
+                  <img key={`${project.id}-detail-${index}`} src={image} alt={`${project.title} detail ${index + 1}`} />
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="detail-copy">
-            <p className="eyebrow">{project.category} {text.detailPrefix}</p>
+            <p className="eyebrow">{text.detailPrefix}</p>
             <h2>{project.title}</h2>
             <p>{project.description}</p>
-            <ul className="detail-facts">
-              <li><strong>{text.detailLocation}:</strong> Riyadh</li>
-              <li><strong>{text.detailType}:</strong> {project.category}</li>
-              <li><strong>{text.detailStatus}:</strong> Completed</li>
-            </ul>
             <button type="button" className="primary-btn" onClick={onOpenWhatsApp}>{text.detailButton}</button>
           </div>
         </div>
@@ -585,7 +597,7 @@ function LoginModal({ open, onClose, onSubmit, language }) {
   )
 }
 
-function AddProjectModal({ open, value, onClose, onChange, onSubmit, onImageUpload, language, uploadingImage }) {
+function AddProjectModal({ open, value, onClose, onChange, onSubmit, onImageUpload, onGalleryUpload, onRemoveGalleryImage, language, uploadingImage }) {
   if (!open) return null
 
   const text = copy[language]
@@ -610,7 +622,49 @@ function AddProjectModal({ open, value, onClose, onChange, onSubmit, onImageUplo
               }}
             />
           </label>
-          {value.image ? <img className="preview-image" src={value.image} alt="Project preview" /> : null}
+          {value.coverImage ? <img className="preview-image" src={value.coverImage} alt="Project preview" /> : null}
+
+          <label className="upload-box">
+            <span>{uploadingImage ? 'Uploading gallery...' : text.uploadGalleryLabel}</span>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              disabled={uploadingImage}
+              onChange={(event) => {
+                const files = Array.from(event.target.files || [])
+                if (!files.length) return
+                onGalleryUpload(files)
+                event.target.value = ''
+              }}
+            />
+          </label>
+          {value.subImages?.length ? (
+            <>
+              <div className="gallery-preview">
+                {value.subImages.map((image, index) => (
+                  <div key={`${image}-${index}`} className="gallery-preview-item">
+                    <img className="preview-image small" src={image} alt={`Project gallery ${index + 1}`} />
+                    <button
+                      type="button"
+                      className="gallery-remove-btn"
+                      aria-label={`Remove gallery image ${index + 1}`}
+                      onClick={() => onRemoveGalleryImage(index)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="secondary-btn small full-width"
+                onClick={() => onChange({ ...value, subImages: [] })}
+              >
+                Clear gallery
+              </button>
+            </>
+          ) : null}
         </div>
 
         <form className="modal-form" onSubmit={onSubmit}>
@@ -630,15 +684,6 @@ function AddProjectModal({ open, value, onClose, onChange, onSubmit, onImageUplo
               value={value.description}
               placeholder={text.projectDescription}
               onChange={(event) => onChange({ ...value, description: event.target.value })}
-            />
-          </label>
-          <label>
-            <span>{text.projectCategory}</span>
-            <input
-              type="text"
-              value={value.category}
-              placeholder={text.projectCategory}
-              onChange={(event) => onChange({ ...value, category: event.target.value })}
             />
           </label>
           <button type="submit" className="primary-btn full-width">{value.id ? text.saveChanges : text.saveProject}</button>
@@ -692,14 +737,10 @@ function App() {
   useEffect(() => {
     const projectsRef = collection(db, 'projects')
     const unsubscribe = onSnapshot(projectsRef, (snapshot) => {
-      const docs = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data()
-        return {
-          id: docSnap.id,
-          ...data,
-          image: data.imageUrl || data.image || '',
-        }
-      })
+      const docs = snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...sanitizeProjectData(docSnap.data()),
+      }))
 
       setProjects(docs)
       setSelectedProject((current) => {
@@ -719,7 +760,7 @@ function App() {
   }, [])
 
   const openWhatsApp = () => {
-    window.open('https://wa.me/966500000000?text=Hello%20Marwan%20Engineering%20Office', '_blank', 'noopener,noreferrer')
+    window.open('https://wa.me/963938990054', '_blank', 'noopener,noreferrer')
   }
 
   const openHome = () => {
@@ -751,14 +792,15 @@ function App() {
   }
 
   const openEditProject = (project) => {
+    const sanitized = sanitizeProjectData(project)
+
     setEditingProjectId(project.id)
     setProjectForm({
       id: project.id,
-      title: project.title,
-      description: project.description,
-      category: project.category,
-      image: project.imageUrl || project.image || '',
-      imageUrl: project.imageUrl || project.image || '',
+      title: sanitized.title,
+      description: sanitized.description,
+      coverImage: sanitized.coverImage,
+      subImages: sanitized.subImages,
     })
     setProjectModalOpen(true)
   }
@@ -778,12 +820,42 @@ function App() {
       const publicUrl = await uploadProjectImage(file)
       setProjectForm((current) => ({
         ...current,
-        image: publicUrl || current.image,
-        imageUrl: publicUrl || current.imageUrl,
+        coverImage: publicUrl || current.coverImage,
       }))
     } catch (error) {
       console.error('Failed to upload project image:', error)
       window.alert('Image upload failed. Please try again.')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleGalleryUpload = async (files) => {
+    if (!files?.length) return
+
+    setUploadingImage(true)
+
+    try {
+      const uploadedUrls = []
+
+      for (const file of files) {
+        const publicUrl = await uploadProjectImage(file)
+        if (publicUrl) {
+          uploadedUrls.push(publicUrl)
+        }
+      }
+
+      if (!uploadedUrls.length) {
+        return
+      }
+
+      setProjectForm((current) => ({
+        ...current,
+        subImages: [...(current.subImages || []), ...uploadedUrls],
+      }))
+    } catch (error) {
+      console.error('Failed to upload project gallery images:', error)
+      window.alert('Gallery upload failed. Please try again.')
     } finally {
       setUploadingImage(false)
     }
@@ -812,30 +884,27 @@ function App() {
 
     const title = projectForm.title.trim()
     const description = projectForm.description.trim()
-    const category = projectForm.category.trim()
 
-    if (!title || !description || !category) return
+    if (!title || !description) return
 
-    const imageUrl = projectForm.imageUrl || projectForm.image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80'
+    const coverImage = projectForm.coverImage || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80'
+    const subImages = Array.isArray(projectForm.subImages)
+      ? projectForm.subImages.filter((url) => typeof url === 'string' && url.trim())
+      : []
 
     try {
+      const projectData = {
+        title,
+        description,
+        coverImage,
+        subImages,
+      }
+
       if (editingProjectId) {
-        await updateDoc(doc(db, 'projects', editingProjectId), {
-          title,
-          description,
-          category,
-          imageUrl,
-          updatedAt: serverTimestamp(),
-        })
+        await updateDoc(doc(db, 'projects', editingProjectId), projectData)
         await logActivity('updated project', title)
       } else {
-        await addDoc(collection(db, 'projects'), {
-          title,
-          description,
-          category,
-          imageUrl,
-          createdAt: serverTimestamp(),
-        })
+        await addDoc(collection(db, 'projects'), projectData)
         await logActivity('added project', title)
       }
 
@@ -923,6 +992,11 @@ function App() {
         onChange={setProjectForm}
         onSubmit={handleSaveProject}
         onImageUpload={handleImageUpload}
+        onGalleryUpload={handleGalleryUpload}
+        onRemoveGalleryImage={(index) => setProjectForm((current) => ({
+          ...current,
+          subImages: (current.subImages || []).filter((_, imageIndex) => imageIndex !== index),
+        }))}
         language={language}
         uploadingImage={uploadingImage}
       />
