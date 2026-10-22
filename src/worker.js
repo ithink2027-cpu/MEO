@@ -22,7 +22,8 @@ async function isAdmin(request, env) {
       issuer: `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`,
       audience: env.FIREBASE_PROJECT_ID,
     })
-    return Boolean(env.ADMIN_UID) && payload.sub === env.ADMIN_UID
+const admins = (env.ADMIN_UIDS || '').split(',').map((s) => s.trim()).filter(Boolean)
+return admins.includes(payload.sub)
   } catch {
     return false
   }
