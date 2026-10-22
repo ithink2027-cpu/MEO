@@ -8,23 +8,24 @@ const jwks = createRemoteJWKSet(
   new URL('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
 )
 
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
+function json(data, status) {
+  return new Response(JSON.stringify(data), {
+    status: status || 200,
     headers: { 'Content-Type': 'application/json' },
   })
+}
 
 async function isAdmin(request, env) {
   const m = (request.headers.get('Authorization') || '').match(/^Bearer\s+(.+)$/i)
   if (!m) return false
   try {
-    const { payload } = await jwtVerify(m[1].trim(), jwks, {
-      issuer: `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`,
+    const result = await jwtVerify(m[1].trim(), jwks, {
+      issuer: 'https://securetoken.google.com/' + env.FIREBASE_PROJECT_ID,
       audience: env.FIREBASE_PROJECT_ID,
     })
     const admins = (env.ADMIN_UIDS || '').split(',').map((s) => s.trim()).filter(Boolean)
-    return admins.includes(payload.sub)
-  } catch {
+    return admins.includes(result.payload.sub)
+  } catch (e) {
     return false
   }
 }
@@ -43,23 +44,15 @@ async function handleUpload(request, env) {
     if (!env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'Storage not configured' }, 500)
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-')
-    const key =
-  }
-}
+    const key = Date.now() + '-' + Math.random().toString(36).slice(2) + '-' + safeName
+    const encoded = encodeURIComponent(key)
 
-async function handleUpload(request, env) {
-  if (request.me
     const res = await fetch(
-     ify } from 'jose'
-
-const BUCKET = 'image-storage'
-const MAX_SIZE = 5 * 1024 * 
+      env.SUPABASE_URL + '/storage/v1/object/' + BUCKET + '/' + encoded,
       {
         method: 'POST',
         headers: {
-          Authorization:storage'
-const MAX_SIZE = 5 * 1024 * 1024
-c
+          Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
           'Content-Type': file.type,
         },
         body: file,
@@ -69,12 +62,9 @@ c
     if (!res.ok) return json({ error: 'Upload failed' }, 500)
 
     return json({
-      url:
-
-const jwks = createRemoteJWKSet(
-  new URL('https://www.googleapis.com/service_acco
+      url: env.SUPABASE_URL + '/storage/v1/object/public/' + BUCKET + '/' + encoded,
     })
-  } catch {
+  } catch (e) {
     return json({ error: 'Internal server error' }, 500)
   }
 }
