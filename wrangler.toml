@@ -9,4 +9,4 @@ binding = "ASSETS"
 [vars]
 SUPABASE_URL = "https://icqkolpqyexqfmsdonqb.supabase.co"
 FIREBASE_PROJECT_ID = "marwan-engineering-office"
-ADMIN_UIDS="tnmGO6H0qjXBwRmUEqt4NSAHKay2,OpoKgxvWfRboFnR4bJeErVdV3IG2"
+ADMIN_UIDS="tnmGO6H0qjXBwRmUEqt4NSAHKay2,26pM5QepmfgKkkRWeeQtnwQ4WMD2"
